@@ -20,7 +20,7 @@ echo "→ Übertragen"
 ssh "$DEPLOY_HOST" "mkdir -p '$DEPLOY_PATH'"
 rsync -az --delete \
   --exclude node_modules --exclude dist --exclude .git --exclude logs \
-  --exclude .claude --exclude CLAUDE.local.md \
+  --exclude .claude --exclude CLAUDE.local.md --exclude docs \
   ./ "$DEPLOY_HOST:$DEPLOY_PATH/"
 
 echo "→ Neu bauen und starten"
