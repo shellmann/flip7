@@ -1,0 +1,43 @@
+# Traefik v2 hinter einem bestehenden Reverse Proxy. Der Hostname kommt aus .env (APP_HOST).
+# Voraussetzungen: externes Docker-Netz "proxy", Entrypoints "http"/"https", Cert-Resolver "http" sowie die
+# Middlewares secHeaders@file und noindex@file in der Traefik-Dateikonfiguration — passe das an dein Setup an.
+services:
+  flip7:
+    build: .
+    container_name: flip7
+    restart: unless-stopped
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      - "traefik.http.routers.flip7.rule=Host(`${APP_HOST}`)"
+      - "traefik.http.routers.flip7.entrypoints=https"
+      - "traefik.http.routers.flip7.tls.certresolver=http"
+      - "traefik.http.routers.flip7.middlewares=secHeaders@file,noindex@file,flip7-ratelimit"
+      - "traefik.http.services.flip7.loadbalancer.server.port=80"
+      # Sehr kleines Limit pro Besucher-IP: ein erster Aufruf braucht ca. 20-25 Requests, danach läuft alles aus dem Cache.
+      - "traefik.http.middlewares.flip7-ratelimit.ratelimit.average=30"
+      - "traefik.http.middlewares.flip7-ratelimit.ratelimit.period=1m"
+      - "traefik.http.middlewares.flip7-ratelimit.ratelimit.burst=60"
+      # www -> ohne www
+      - "traefik.http.middlewares.flip7-www-redirect.redirectregex.regex=^https://www\\.${APP_HOST}/(.*)"
+      - "traefik.http.middlewares.flip7-www-redirect.redirectregex.replacement=https://${APP_HOST}/$$1"
+      - "traefik.http.middlewares.flip7-www-redirect.redirectregex.permanent=true"
+      - "traefik.http.routers.flip7-www.rule=Host(`www.${APP_HOST}`)"
+      - "traefik.http.routers.flip7-www.entrypoints=https"
+      - "traefik.http.routers.flip7-www.tls.certresolver=http"
+      - "traefik.http.routers.flip7-www.tls.domains[0].main=www.${APP_HOST}"
+      - "traefik.http.routers.flip7-www.middlewares=flip7-www-redirect"
+      - "traefik.http.routers.flip7-www.service=flip7"
+      # http -> https
+      - "traefik.http.middlewares.flip7-http-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.flip7-http-redirect.redirectscheme.permanent=true"
+      - "traefik.http.routers.flip7-http.rule=Host(`${APP_HOST}`,`www.${APP_HOST}`)"
+      - "traefik.http.routers.flip7-http.entrypoints=http"
+      - "traefik.http.routers.flip7-http.middlewares=flip7-http-redirect"
+      - "traefik.http.routers.flip7-http.service=flip7"
+
+networks:
+  proxy:
+    external: true
