@@ -4,19 +4,19 @@ import GameOver from './GameOver'
 import History from './History'
 import Menu from './Menu'
 import NoticeToast from './NoticeToast'
-import RoundEntry from './RoundEntry'
+import RoundEntry, { type EntryMode } from './RoundEntry'
 import Rules from './Rules'
 import Scoreboard from './Scoreboard'
 import Setup from './Setup'
 import UpdateToast from './UpdateToast'
-import { addRound, dealerIndex, isOver, newGame, newId, undoLastRound, updateEntry } from './game'
+import { addRound, dealerIndex, discardDraft, isDraftComplete, isOver, newGame, newId, removeDraftEntry, reopenLastRound, setDraftEntry, updateEntry } from './game'
 import { collectHighlightsSince, type ReleaseNote } from './releaseNotes'
 import { DATA_KEY, SETTINGS, emptyData, loadData, readLocal, rememberPlayers, saveData, withGame, writeLocal } from './storage'
 import { applyTheme, loadTheme, saveTheme, watchSystemTheme, type Theme } from './theme'
 import { useWakeLock } from './wakeLock'
 import type { AppData, Entry, RecentPlayer } from './types'
 
-type Entering = { edit?: { roundId: string; playerId: string } } | null
+type Entering = EntryMode | null
 type Sheet = 'rules' | 'history' | null
 type Notice = { id: string; text: string; undo?: () => void } | null
 
@@ -69,21 +69,30 @@ export default function App() {
     setOverviewGameId(null)
   }
 
-  const saveRound = (entries: Record<string, Entry>) => {
-    if (!game) return
-    const next = addRound(game, entries)
+  const saveRound = () => {
+    if (!game?.draft || !isDraftComplete(game)) return
+    const next = addRound(game, game.draft)
     commit(next)
     setEntering(null)
     if (!isOver(next)) {
       setNotice({
         id: newId(),
         text: `Runde ${next.rounds.length} gespeichert.`,
+        // Rückgängig öffnet die Runde wieder — die eingetragenen Punkte bleiben erhalten.
         undo: () => {
-          setData(withGame({ ...data, current: next }, undoLastRound(next)))
+          setData(withGame({ ...data, current: next }, reopenLastRound(next)))
           setNotice(null)
         },
       })
     }
+  }
+
+  const saveDraftEntry = (playerId: string, entry: Entry) => { if (game) commit(setDraftEntry(game, playerId, entry)) }
+  const removeDraft = (playerId: string) => { if (game) commit(removeDraftEntry(game, playerId)) }
+  const discardRound = () => {
+    if (!game) return
+    commit(discardDraft(game))
+    setEntering(null)
   }
 
   const saveEdit = (roundId: string, playerId: string, entry: Entry) => {
@@ -129,9 +138,10 @@ export default function App() {
           <Scoreboard
             game={game}
             finished={over}
-            onEnterRound={() => setEntering({})}
-            onUndo={() => { commit(undoLastRound(game)); setNotice(null) }}
-            onEditEntry={(roundId, playerId) => setEntering({ edit: { roundId, playerId } })}
+            onEnterRound={() => setEntering({ mode: 'round' })}
+            onPlayerOut={(playerId) => setEntering({ mode: 'player', playerId })}
+            onUndo={() => { commit(reopenLastRound(game)); setNotice(null) }}
+            onEditEntry={(roundId, playerId) => setEntering({ mode: 'edit', roundId, playerId })}
             onShowResult={() => setOverviewGameId(null)}
           />
         )}
@@ -140,8 +150,11 @@ export default function App() {
       {entering && game && (
         <RoundEntry
           game={game}
-          edit={entering.edit}
+          entry={entering}
+          onSaveDraft={saveDraftEntry}
+          onRemoveDraft={removeDraft}
           onSaveRound={saveRound}
+          onDiscardRound={discardRound}
           onSaveEdit={saveEdit}
           onClose={() => setEntering(null)}
         />

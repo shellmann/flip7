@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Check, Hash, Layers, Star } from 'lucide-react'
 import Celebrate from './Celebrate'
 import Keypad from './Keypad'
@@ -15,11 +15,12 @@ type Props = {
   nextLabel: string
   onBack: () => void
   onNext: () => void
+  extra?: ReactNode // z. B. "Doch noch im Spiel" — steht ganz oben im Inhalt, weit weg von "Fertig" in der unteren Leiste
 }
 
 const hue = (n: number) => n * 27
 
-export default function CardPicker({ player, state, onChange, step, backLabel, nextLabel, onBack, onNext }: Props) {
+export default function CardPicker({ player, state, onChange, step, backLabel, nextLabel, onBack, onNext, extra }: Props) {
   const entry = pickerToEntry(state)
   const set = (patch: Partial<PickerState>) => onChange({ ...state, ...patch })
 
@@ -53,6 +54,7 @@ export default function CardPicker({ player, state, onChange, step, backLabel, n
       </header>
 
       <div className="picker-body">
+        {extra}
         <div className="segmented" role="group" aria-label="Eingabeart">
           <button type="button" className={`seg ${state.mode === 'cards' ? 'is-on' : ''}`} aria-pressed={state.mode === 'cards'} onClick={() => set({ mode: 'cards' })}>
             <Layers size={22} aria-hidden /> Karten

@@ -12,7 +12,8 @@ Ein kleiner, werbefreier Punktezähler für das Kartenspiel **Flip 7** – für 
 
 - 2–18 Spieler mit Tier und Farbe, Ziel wählbar (Standard 200 Punkte), Geber-Anzeige.
 - Runde eintragen per Kartenwahl (Zahlen 0–12, Bonuskarten +2 … +10 und ×2). Die App rechnet live, erkennt das Flip 7 (+15) und kennt „Verzockt“. Alternativ die Punkte über eine große Zifferntastatur eintippen.
-- Runden nachträglich korrigieren, letzte Runde rückgängig machen.
+- Ergebnisse schon während der Runde eintragen: auf den Namen tippen, sobald jemand fertig ist (Stopp, Freeze oder verzockt). Die Summe zählt erst, wenn die Runde gespeichert ist.
+- Runden nachträglich korrigieren; „Rückgängig“ öffnet die letzte Runde wieder, ohne Punkte zu verlieren.
 - Spielende mit Siegerehrung; Gleichstand an der Spitze führt zu einer weiteren Runde.
 - Verlauf und Statistik beendeter Spiele, Spielregeln im Menü (auf Deutsch).
 - Hell/Dunkel, große Schrift, Bildschirm wachhalten, installierbar und offline nutzbar (PWA).

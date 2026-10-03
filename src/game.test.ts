@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addRound, currentDealer, dealerIndex, isOver, newGame, playerStats, ranking, status, totals, undoLastRound, updateEntry } from './game'
+import { addRound, currentDealer, dealerIndex, discardDraft, draftCount, isDraftComplete, isOver, newGame, playerStats, ranking, removeDraftEntry, reopenLastRound, setDraftEntry, status, totals, undoLastRound, updateEntry } from './game'
 import { bustEntry, manualEntry } from './scoring'
 import type { Entry, Game, Player } from './types'
 
@@ -88,5 +88,61 @@ describe('Statistik', () => {
     expect(anna).toMatchObject({ games: 1, wins: 1, rounds: 2, totalPoints: 210, bestRound: 150, flip7s: 1, busts: 0 })
     expect(stats.find((s) => s.name === 'Ben')).toMatchObject({ wins: 0, busts: 1 })
     expect(stats[0].name).toBe('Anna')
+  })
+})
+
+describe('Offene Runde (draft)', () => {
+  it('Einträge setzen, zählen und wieder entfernen', () => {
+    let g = setDraftEntry(fresh(), 'p1', raw(12))
+    expect(draftCount(g)).toBe(1)
+    expect(isDraftComplete(g)).toBe(false)
+    g = setDraftEntry(setDraftEntry(g, 'p0', raw(5)), 'p2', bustEntry())
+    expect(isDraftComplete(g)).toBe(true)
+    g = removeDraftEntry(g, 'p1')
+    expect(draftCount(g)).toBe(2)
+    expect(g.draft?.p1).toBeUndefined()
+  })
+  it('letzter entfernter Eintrag räumt draft ganz weg', () => {
+    const g = removeDraftEntry(setDraftEntry(fresh(), 'p0', raw(5)), 'p0')
+    expect(g.draft).toBeUndefined()
+  })
+  it('Summe, Spielende und Statistik ignorieren die offene Runde', () => {
+    const g = setDraftEntry(addRound(fresh(), scores(150, 10, 10)), 'p0', raw(90))
+    expect(totals(g).p0).toBe(150)
+    expect(status(g).kind).toBe('running')
+    expect(playerStats([g]).find((s) => s.name === 'Anna')?.rounds).toBe(1)
+  })
+  it('Speichern aus draft übernimmt die Einträge und leert draft', () => {
+    let g = fresh()
+    for (const [id, pts] of [['p0', 7], ['p1', 0], ['p2', 30]] as const) g = setDraftEntry(g, id, raw(pts))
+    const saved = addRound(g, g.draft!)
+    expect(saved.draft).toBeUndefined()
+    expect(totals(saved)).toEqual({ p0: 7, p1: 0, p2: 30 })
+  })
+  it('discardDraft verwirft die offene Runde', () => {
+    expect(discardDraft(setDraftEntry(fresh(), 'p0', raw(5))).draft).toBeUndefined()
+  })
+})
+
+describe('reopenLastRound', () => {
+  it('öffnet die letzte Runde mit allen Einträgen wieder', () => {
+    const g = addRound(addRound(fresh(), scores(1, 2, 3)), scores(10, 20, 30))
+    const r = reopenLastRound(g)
+    expect(r.rounds).toHaveLength(1)
+    expect(r.draft).toEqual(g.rounds[1].entries)
+    expect(totals(r)).toEqual({ p0: 1, p1: 2, p2: 3 })
+  })
+  it('nimmt ein Spielende zurück', () => {
+    const over = addRound(fresh(), scores(210, 0, 0))
+    const r = reopenLastRound(over)
+    expect(isOver(r)).toBe(false)
+    expect(r.endedAt).toBeUndefined()
+    expect(r.draft?.p0.points).toBe(210)
+  })
+  it('lässt das Spiel unverändert, wenn schon eine offene Runde läuft oder es keine Runde gibt', () => {
+    const g = setDraftEntry(addRound(fresh(), scores(1, 2, 3)), 'p0', raw(9))
+    expect(reopenLastRound(g)).toBe(g)
+    const empty = fresh()
+    expect(reopenLastRound(empty)).toBe(empty)
   })
 })

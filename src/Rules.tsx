@@ -72,7 +72,8 @@ export default function Rules({ onClose }: Props) {
         <h3>📱 So nutzt du die App</h3>
         <ol>
           <li>Spieler eintragen, Ziel wählen, Spiel starten.</li>
-          <li>Nach jeder Runde: „Runde eintragen“, dann für jeden die Karten antippen (oder die Punkte eintippen). Verzockt hat einen eigenen Knopf.</li>
+          <li>Ist jemand schon fertig (Stopp, Freeze oder verzockt), tippe gleich auf den Namen im Spielstand und trag die Punkte ein.</li>
+          <li>Am Ende der Runde: „Rest eintragen“ für alle, die noch fehlen, dann die Runde speichern. Verzockt hat einen eigenen Knopf.</li>
           <li>Die App rechnet mit, zeigt den Stand und wer als Nächstes gibt. Vertippt? Alles lässt sich korrigieren.</li>
         </ol>
 

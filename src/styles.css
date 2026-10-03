@@ -253,3 +253,11 @@ a { color: var(--primary); font-weight: 600; }
 .stack, .panel, .player-list, .player-row, .field, .board, .ranking, .rounds, .round-card, .overview, .history,
 .drawer, .sheet-inner, .picker-body, .dialog, .winner { grid-template-columns: minmax(0, 1fr); }
 .name-input { width: 100%; }
+
+/* Spielerzeile als Knopf: antippen, sobald jemand fertig ist */
+.board-row-btn { width: 100%; text-align: left; font: inherit; color: inherit; box-shadow: var(--shadow); transition: transform 0.08s; }
+.board-row-btn:active { transform: translateY(3px); box-shadow: 0 3px 0 rgba(43, 35, 80, 0.12); }
+.board-row-btn.is-leading { box-shadow: 0 0 0 4px var(--accent), var(--shadow); }
+.round-status { font-weight: 700; color: var(--muted); }
+.round-status.is-done { color: var(--good); }
+@media (prefers-reduced-motion: reduce) { .board-row-btn { transition: none; } }

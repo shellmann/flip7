@@ -10,9 +10,10 @@ Dieses Repo ist **öffentlich**. Nie committen: Hostnamen, IPs, SSH-Ziele, Serve
 
 - `src/scoring.ts` — reine Punkteberechnung: ×2 verdoppelt **nur** die Zahlensumme, danach +-Karten, zuletzt +15 für Flip 7 (nie verdoppelt); Verzockt = 0; Maximum 171. Einzige Quelle der Wahrheit für die Regeln, getestet in `scoring.test.ts` (Beispiele aus der Spielanleitung).
 - `src/game.ts` — reine Spiellogik: Summen, Geber-Rotation, Spielende (Ziel erreicht und eindeutige Spitze; Gleichstand → weitere Runde mit allen), Rückgängig/Bearbeiten, Statistik. `endedAt` wird immer aus dem Ergebnis abgeleitet.
+- Offene Runde: `Game.draft` (optional) hält Einträge einzelner Spieler, bevor alle fertig sind. `totals`/`status`/Statistik lesen nur `rounds`, die offene Runde zählt also erst nach `addRound` (das `draft` leert). `reopenLastRound` macht Rückgängig ohne Datenverlust; bei bereits offener Runde ändert es nichts.
 - `src/storage.ts` — `localStorage` (Schlüssel `flip7-data-v1`, Einstellungen separat in `SETTINGS`). `withGame` hält Verlauf und aktuelles Spiel konsistent (ein beendetes Spiel steht im Verlauf, Rückgängig nimmt es wieder heraus).
 - `src/picker.ts` — Zustand der Kartenwahl und der Zifferntastatur (rein, getestet).
-- UI: `App.tsx` (Shell), `Setup`, `Scoreboard`, `RoundEntry` + `CardPicker` + `Keypad`, `GameOver`, `Menu`, `Rules`, `History`, `Celebrate` (CSS-Konfetti), `Confirm`.
+- UI: `App.tsx` (Shell), `Setup`, `Scoreboard` (Spielerzeilen sind Knöpfe zum Sofort-Eintragen), `RoundEntry` (Modi `player`, `round`, `edit`) + `CardPicker` + `Keypad`, `GameOver`, `Menu`, `Rules`, `History`, `Celebrate` (CSS-Konfetti), `Confirm`.
 - `src/update.ts` — `busy`-Zähler + Sichtbarkeits-Gate: ein Service-Worker-Update lädt nie mitten in einer Eingabe neu (`RoundEntry` und `Setup` halten es auf „busy“).
 - `src/theme.ts`, `src/wakeLock.ts`, `src/releaseNotes.ts`, `src/UpdateToast.tsx`, `src/NoticeToast.tsx`.
 

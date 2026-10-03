@@ -1,32 +1,54 @@
 import { useEffect, useState } from 'react'
 import CardPicker from './CardPicker'
 import Confirm from './Confirm'
+import { isDraftComplete } from './game'
 import { beginBusy, endBusy } from './update'
 import { emptyPicker, pickerFromEntry, pickerToEntry, type PickerState } from './picker'
-import type { Entry, Game, Player } from './types'
+import type { Entry, Game } from './types'
+
+export type EntryMode =
+  | { mode: 'player'; playerId: string } // einzelner Spieler ist schon fertig (z. B. Freeze) — aus der Spielerzeile
+  | { mode: 'round' } // alle, die noch fehlen, nacheinander; danach Übersicht zum Speichern
+  | { mode: 'edit'; roundId: string; playerId: string } // Eintrag einer gespeicherten Runde korrigieren
 
 type Props = {
   game: Game
-  // Ohne `edit`: neue Runde für alle. Mit `edit`: genau einen Eintrag einer früheren Runde korrigieren.
-  edit?: { roundId: string; playerId: string }
-  onSaveRound: (entries: Record<string, Entry>) => void
+  entry: EntryMode
+  onSaveDraft: (playerId: string, entry: Entry) => void
+  onRemoveDraft: (playerId: string) => void
+  onSaveRound: () => void
+  onDiscardRound: () => void
   onSaveEdit: (roundId: string, playerId: string, entry: Entry) => void
   onClose: () => void
 }
 
 const summary = (e: Entry) => (e.bust ? '💥 Verzockt' : e.flip7 ? `⭐ ${e.points} (Flip 7)` : `${e.points}`)
 
-export default function RoundEntry({ game, edit, onSaveRound, onSaveEdit, onClose }: Props) {
+export default function RoundEntry({ game, entry, onSaveDraft, onRemoveDraft, onSaveRound, onDiscardRound, onSaveEdit, onClose }: Props) {
   const players = game.players
-  const editRound = edit ? game.rounds.find((r) => r.id === edit.roundId) : undefined
+  const draft = game.draft ?? {}
+  const roundNo = game.rounds.length + 1
+  const indexOf = (id: string) => players.findIndex((p) => p.id === id)
+  const firstPending = (exclude: string[] = []) => {
+    const idx = players.findIndex((p) => !draft[p.id] && !exclude.includes(p.id))
+    return idx === -1 ? null : idx
+  }
 
+  // Lokaler Zustand der Kartenwahl; Startwerte aus der offenen Runde bzw. dem zu korrigierenden Eintrag.
   const [pickers, setPickers] = useState<Record<string, PickerState>>(() => {
-    if (!edit || !editRound) return {}
-    return { [edit.playerId]: pickerFromEntry(editRound.entries[edit.playerId]) }
+    if (entry.mode === 'edit') {
+      const round = game.rounds.find((r) => r.id === entry.roundId)
+      return { [entry.playerId]: pickerFromEntry(round?.entries[entry.playerId]) }
+    }
+    return Object.fromEntries(Object.entries(draft).map(([id, e]) => [id, pickerFromEntry(e)]))
   })
-  const [done, setDone] = useState<string[]>([])
-  const [active, setActive] = useState<number | null>(() => (edit ? players.findIndex((p) => p.id === edit.playerId) : 0))
-  const [confirmCancel, setConfirmCancel] = useState(false)
+  const [active, setActive] = useState<number | null>(() => {
+    if (entry.mode === 'round') return firstPending()
+    return indexOf(entry.playerId)
+  })
+  const [visited, setVisited] = useState<number[]>([]) // Rückweg im Runden-Modus
+  const [fromOverview, setFromOverview] = useState(false)
+  const [confirmDiscard, setConfirmDiscard] = useState(false)
 
   // Während der Eingabe darf kein Update die Seite neu laden (siehe update.ts).
   useEffect(() => {
@@ -34,107 +56,145 @@ export default function RoundEntry({ game, edit, onSaveRound, onSaveEdit, onClos
     return () => endBusy()
   }, [])
 
-  const stateFor = (p: Player) => pickers[p.id] ?? emptyPicker()
-  const allDone = players.every((p) => done.includes(p.id))
-  const hasInput = Object.keys(pickers).length > 0
-
-  const askClose = () => (edit || !hasInput ? onClose() : setConfirmCancel(true))
+  const stateFor = (id: string) => pickers[id] ?? emptyPicker()
+  const setState = (id: string, s: PickerState) => setPickers((prev) => ({ ...prev, [id]: s }))
+  const resetToSaved = (id: string) =>
+    setPickers((prev) => ({ ...prev, [id]: draft[id] ? pickerFromEntry(draft[id]) : emptyPicker() }))
 
   if (active !== null) {
     const player = players[active]
+    const stateNow = stateFor(player.id)
 
-    if (edit) {
+    if (entry.mode === 'edit') {
       return (
         <div className="sheet">
           <CardPicker
             player={player}
-            state={stateFor(player)}
-            onChange={(s) => setPickers({ ...pickers, [player.id]: s })}
-            step={`Runde ${game.rounds.findIndex((r) => r.id === edit.roundId) + 1} korrigieren`}
+            state={stateNow}
+            onChange={(s) => setState(player.id, s)}
+            step={`Runde ${game.rounds.findIndex((r) => r.id === entry.roundId) + 1} korrigieren`}
             backLabel="Abbrechen"
             nextLabel="Speichern ✓"
             onBack={onClose}
-            onNext={() => onSaveEdit(edit.roundId, edit.playerId, pickerToEntry(stateFor(player)))}
+            onNext={() => onSaveEdit(entry.roundId, entry.playerId, pickerToEntry(stateNow))}
           />
         </div>
       )
     }
 
-    const doneAfter = [...done, player.id]
-    const next = (() => {
-      for (let i = 1; i < players.length; i++) {
-        const idx = (active + i) % players.length
-        if (!doneAfter.includes(players[idx].id)) return idx
-      }
-      return null
-    })()
-    const correcting = allDone // alle waren schon eingetragen → wir kamen aus der Übersicht
+    const stayInGame = draft[player.id] ? (
+      <button
+        type="button"
+        className="btn btn-secondary btn-wide"
+        onClick={() => {
+          onRemoveDraft(player.id)
+          setState(player.id, emptyPicker())
+          if (entry.mode === 'player') onClose()
+          else setActive(null)
+        }}
+      >
+        ↩ Doch noch im Spiel
+      </button>
+    ) : undefined
 
+    if (entry.mode === 'player' || fromOverview) {
+      return (
+        <div className="sheet">
+          <CardPicker
+            player={player}
+            state={stateNow}
+            onChange={(s) => setState(player.id, s)}
+            step={`Runde ${roundNo} · ist fertig`}
+            backLabel={entry.mode === 'player' ? 'Zum Spielstand' : 'Übersicht'}
+            nextLabel="Fertig ✓"
+            onBack={() => {
+              if (entry.mode === 'player') return onClose()
+              resetToSaved(player.id)
+              setActive(null)
+            }}
+            onNext={() => {
+              onSaveDraft(player.id, pickerToEntry(stateNow))
+              if (entry.mode === 'player') onClose()
+              else setActive(null)
+            }}
+            extra={stayInGame}
+          />
+        </div>
+      )
+    }
+
+    // Runden-Modus: nur die Spieler, die noch fehlen, der Reihe nach.
+    const next = firstPending([player.id])
     return (
       <div className="sheet">
         <CardPicker
           player={player}
-          state={stateFor(player)}
-          onChange={(s) => setPickers({ ...pickers, [player.id]: s })}
-          step={`Spieler ${active + 1} von ${players.length}`}
-          backLabel={correcting ? 'Übersicht' : active === 0 ? 'Abbrechen' : 'Zurück'}
-          nextLabel={correcting ? 'Fertig ✓' : next === null ? 'Fertig ✓' : `Weiter zu ${players[next].name}`}
-          onBack={() => (correcting ? setActive(null) : active === 0 ? askClose() : setActive(active - 1))}
+          state={stateNow}
+          onChange={(s) => setState(player.id, s)}
+          step={`Runde ${roundNo} · Spieler ${active + 1} von ${players.length}`}
+          backLabel={visited.length === 0 ? 'Zum Spielstand' : 'Zurück'}
+          nextLabel={next === null ? 'Fertig ✓' : `Weiter zu ${players[next].name}`}
+          onBack={() => {
+            if (visited.length === 0) return onClose()
+            setActive(visited[visited.length - 1])
+            setVisited(visited.slice(0, -1))
+          }}
           onNext={() => {
-            setPickers((prev) => (prev[player.id] ? prev : { ...prev, [player.id]: emptyPicker() }))
-            setDone(doneAfter)
-            setActive(correcting ? null : next)
+            onSaveDraft(player.id, pickerToEntry(stateNow))
+            setVisited([...visited, active])
+            setActive(next)
           }}
         />
-        {confirmCancel && (
-          <Confirm
-            title="Runde verwerfen?"
-            text="Die bisher eingetragenen Punkte dieser Runde gehen verloren."
-            confirmLabel="Ja, verwerfen"
-            danger
-            onConfirm={onClose}
-            onCancel={() => setConfirmCancel(false)}
-          />
-        )}
       </div>
     )
   }
 
-  // Übersicht: alle sehen, was eingetragen ist, einzelne Einträge lassen sich antippen und korrigieren.
-  const canSave = allDone
+  // Übersicht der offenen Runde: korrigieren, speichern, später weitermachen oder verwerfen.
+  const complete = isDraftComplete(game)
+  const entered = players.filter((p) => draft[p.id]).length
   return (
     <div className="sheet">
       <div className="sheet-inner">
-        <h2 className="sheet-title">Runde {game.rounds.length + 1}: Alles eingetragen?</h2>
-        <p className="note">Tippe auf einen Namen, um die Punkte zu ändern.</p>
+        <h2 className="sheet-title">{complete ? `Runde ${roundNo}: Alles eingetragen?` : `Runde ${roundNo}: Zwischenstand`}</h2>
+        <p className="note">
+          {complete ? 'Tippe auf einen Namen, um die Punkte zu ändern.' : `${entered} von ${players.length} eingetragen. Tippe auf einen Namen, um Punkte einzutragen oder zu ändern.`}
+        </p>
         <ul className="overview">
           {players.map((p, i) => {
-            const entry = pickers[p.id] ? pickerToEntry(pickers[p.id]) : null
+            const e = draft[p.id]
             return (
               <li key={p.id}>
-                <button type="button" className="overview-row" style={{ ['--player' as string]: p.color }} onClick={() => setActive(i)}>
+                <button
+                  type="button"
+                  className="overview-row"
+                  style={{ ['--player' as string]: p.color }}
+                  onClick={() => { setFromOverview(true); setActive(i) }}
+                >
                   <span className="avatar" aria-hidden>{p.emoji}</span>
                   <span className="overview-name">{p.name}</span>
-                  <span className="overview-points">{entry ? summary(entry) : 'noch offen'}</span>
+                  <span className="overview-points">{e ? summary(e) : '⏳ spielt noch'}</span>
                 </button>
               </li>
             )
           })}
         </ul>
-        <button type="button" className="btn btn-primary btn-wide btn-xl" disabled={!canSave} onClick={() => onSaveRound(Object.fromEntries(players.map((p) => [p.id, pickerToEntry(stateFor(p))])))}>
+        <button type="button" className="btn btn-primary btn-wide btn-xl" disabled={!complete} onClick={onSaveRound}>
           Runde speichern ✓
         </button>
+        <button type="button" className="btn btn-secondary btn-wide" onClick={onClose}>Später weiter</button>
         <div className="spacer-lg" />
-        <button type="button" className="btn btn-secondary btn-wide" onClick={askClose}>Abbrechen</button>
+        {entered > 0 && (
+          <button type="button" className="btn btn-danger btn-wide" onClick={() => setConfirmDiscard(true)}>Runde verwerfen</button>
+        )}
       </div>
-      {confirmCancel && (
+      {confirmDiscard && (
         <Confirm
           title="Runde verwerfen?"
-          text="Die eingetragenen Punkte dieser Runde gehen verloren."
+          text="Alle Punkte, die in dieser Runde schon eingetragen sind, werden gelöscht."
           confirmLabel="Ja, verwerfen"
           danger
-          onConfirm={onClose}
-          onCancel={() => setConfirmCancel(false)}
+          onConfirm={onDiscardRound}
+          onCancel={() => setConfirmDiscard(false)}
         />
       )}
     </div>

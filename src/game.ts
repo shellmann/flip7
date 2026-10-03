@@ -66,9 +66,38 @@ function settle(game: Game, now: number): Game {
   return game
 }
 
+function withoutDraft(game: Game): Game {
+  const { draft: _drop, ...rest } = game
+  return rest
+}
+
 export function addRound(game: Game, entries: Record<string, Entry>, now = Date.now()): Game {
   const round: Round = { id: newId(), entries }
-  return settle({ ...game, rounds: [...game.rounds, round] }, now)
+  return settle({ ...withoutDraft(game), rounds: [...game.rounds, round] }, now)
+}
+
+// Offene Runde: Ergebnisse einzelner Spieler schon während der Runde festhalten.
+export const draftCount = (game: Game) => game.players.filter((p) => game.draft?.[p.id]).length
+export const isDraftComplete = (game: Game) => draftCount(game) === game.players.length
+
+export function setDraftEntry(game: Game, playerId: string, entry: Entry): Game {
+  return { ...game, draft: { ...game.draft, [playerId]: entry } }
+}
+
+export function removeDraftEntry(game: Game, playerId: string): Game {
+  if (!game.draft?.[playerId]) return game
+  const { [playerId]: _drop, ...rest } = game.draft
+  return Object.keys(rest).length === 0 ? withoutDraft(game) : { ...game, draft: rest }
+}
+
+export const discardDraft = (game: Game): Game => withoutDraft(game)
+
+// Rückgängig ohne Datenverlust: die letzte Runde wird wieder offen, ihre Einträge stehen in draft.
+// Läuft schon eine offene Runde, bleibt alles unverändert (sonst würden zwei Runden vermischt).
+export function reopenLastRound(game: Game, now = Date.now()): Game {
+  const last = game.rounds[game.rounds.length - 1]
+  if (!last || draftCount(game) > 0) return game
+  return settle({ ...game, rounds: game.rounds.slice(0, -1), draft: { ...last.entries } }, now)
 }
 
 export function updateEntry(game: Game, roundId: string, playerId: string, entry: Entry, now = Date.now()): Game {

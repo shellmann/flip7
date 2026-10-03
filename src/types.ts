@@ -19,6 +19,9 @@ export type Game = {
   players: Player[]
   firstDealer: number
   rounds: Round[]
+  // Offene Runde: schon eingetragene Ergebnisse (z. B. nach Freeze), bevor alle fertig sind.
+  // Zählt erst nach dem Speichern in Summe, Spielende und Statistik.
+  draft?: Record<string, Entry>
 }
 
 export type RecentPlayer = Omit<Player, 'id'>
