@@ -54,11 +54,12 @@ export default function CardPicker({ player, state, onChange, step, backLabel, n
           {step && <span className="muted">{step}</span>}
           <strong>{player.name}</strong>
         </div>
-        <div className="picker-total" aria-live="polite">
+        <div className="picker-total">
           <strong>{entry.points}</strong>
           <span>Punkte</span>
         </div>
-        <p className="picker-formula">{formula}</p>
+        {/* Einzige Live-Region im Kopf: der Rechenweg enthält die Summe, sonst würde alles doppelt angesagt. */}
+        <p className="picker-formula" aria-live="polite">{formula}</p>
       </header>
 
       <div className="picker-body">
@@ -145,7 +146,6 @@ export default function CardPicker({ player, state, onChange, step, backLabel, n
                 {state.x2 && <Check className="card-check" size={22} aria-hidden />}
               </button>
             </div>
-
           </>
         ) : (
           <>

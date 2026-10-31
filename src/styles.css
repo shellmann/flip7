@@ -274,7 +274,10 @@ a { color: var(--primary); font-weight: 600; }
   background: var(--bg); color: #2b2350; border: 3px solid var(--line); border-radius: 1rem; box-shadow: var(--shadow);
 }
 .choice.is-on { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary); }
-.choice:disabled { opacity: 0.3; cursor: not-allowed; box-shadow: none; }
+/* Vergebenes Tier: nur das Tier blass, der Text „bei Anna“ bleibt gut lesbar */
+.choice:disabled { cursor: not-allowed; box-shadow: none; border-style: dashed; }
+.choice:disabled .choice-emoji { opacity: 0.35; filter: grayscale(1); }
 .choice-emoji { font-size: 2.2rem; line-height: 1; }
 .choice-name { font-size: 0.8rem; font-weight: 700; }
 .choice-check { position: absolute; top: 0.2rem; right: 0.2rem; background: #fff; color: var(--good); border-radius: 50%; padding: 2px; }
+.choice-taken { color: var(--muted); }

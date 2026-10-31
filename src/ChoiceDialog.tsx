@@ -1,4 +1,4 @@
-import { useEffect, useRef, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react'
+import { useEffect, useId, useRef, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react'
 import { Check } from 'lucide-react'
 
 export type Choice = {
@@ -6,7 +6,7 @@ export type Choice = {
   label: string // Name für Screenreader, z. B. „Fuchs“ oder „Gelb“
   content: ReactNode
   style?: CSSProperties
-  taken?: string // z. B. „schon bei Anna“ — dann nicht wählbar
+  taken?: string // z. B. „bei Anna“ — dann nicht wählbar; wird sichtbar im Feld angezeigt (kein Hover nötig)
 }
 
 type Props = {
@@ -20,8 +20,11 @@ type Props = {
 // Auswahlfenster mit großen Feldern: ein Tipp wählt und schließt. Zugänglich: Dialog mit Überschrift,
 // Optionen als Knöpfe mit Namen und aria-pressed, Fokus startet auf der gewählten Option, bleibt im
 // Fenster (Tab), Escape schließt, danach kehrt der Fokus zum auslösenden Knopf zurück.
+// Ein Tipp auf den Hintergrund schließt ebenfalls — bewusst anders als Confirm: hier geht dabei nichts
+// verloren (die bisherige Wahl bleibt), bei einer Rückfrage dagegen soll ein Danebentippen nichts auslösen.
 export default function ChoiceDialog({ title, choices, selected, onPick, onClose }: Props) {
   const dialogRef = useRef<HTMLElement>(null)
+  const titleId = useId()
 
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null
@@ -56,11 +59,11 @@ export default function ChoiceDialog({ title, choices, selected, onPick, onClose
         className="dialog choice-dialog"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="choice-title"
+        aria-labelledby={titleId}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={onKeyDown}
       >
-        <h2 id="choice-title">{title}</h2>
+        <h2 id={titleId}>{title}</h2>
         <div className="choice-grid">
           {choices.map((c) => {
             const on = c.value === selected
@@ -72,11 +75,11 @@ export default function ChoiceDialog({ title, choices, selected, onPick, onClose
                 style={c.style}
                 aria-pressed={on}
                 aria-label={c.taken ? `${c.label}, ${c.taken}` : c.label}
-                title={c.taken ? `${c.label} – ${c.taken}` : c.label}
                 disabled={!!c.taken}
                 onClick={() => onPick(c.value)}
               >
                 {c.content}
+                {c.taken && <span className="choice-name choice-taken" aria-hidden>{c.taken}</span>}
                 {on && <Check className="choice-check" size={20} aria-hidden />}
               </button>
             )
