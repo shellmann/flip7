@@ -4,7 +4,7 @@ Ein kleiner, werbefreier Punktezähler für das Kartenspiel **Flip 7** – für 
 
 | Neues Spiel | Spielstand | Karten antippen | Siegerehrung | Regeln im Menü |
 |:---:|:---:|:---:|:---:|:---:|
-| <img src="docs/screenshots/01-setup.png" alt="Neues Spiel: Spieler mit Tier und Farbe, Ziel und Geber wählen" width="170"> | <img src="docs/screenshots/02-scoreboard.png" alt="Spielstand mit Fortschritt bis zum Ziel und Geber-Anzeige" width="170"> | <img src="docs/screenshots/03-card-picker.png" alt="Runde eintragen: Zahlen- und Bonuskarten antippen, die App rechnet live" width="170"> | <img src="docs/screenshots/04-winner.png" alt="Siegerehrung mit Rangliste" width="170"> | <img src="docs/screenshots/05-rules.png" alt="Spielregeln im Menü" width="170"> |
+| <img src="docs/screenshots/01-setup.png" alt="Neues Spiel: Spieler mit Tier und Farbe, Ziel und Geber wählen" width="170"> | <img src="docs/screenshots/02-scoreboard.png" alt="Spielstand während einer Runde: zwei Spieler sind schon fertig und eingetragen, zwei spielen noch" width="170"> | <img src="docs/screenshots/03-card-picker.png" alt="Runde eintragen: Zahlen- und Bonuskarten antippen, der Rechenweg steht oben" width="170"> | <img src="docs/screenshots/04-winner.png" alt="Siegerehrung mit Rangliste" width="170"> | <img src="docs/screenshots/05-rules.png" alt="Spielregeln im Menü" width="170"> |
 
 > Inoffizielle Fan-App, nicht verbunden mit The Op Games oder Kosmos. „Flip 7“ ist eine Marke der jeweiligen Rechteinhaber.
 
