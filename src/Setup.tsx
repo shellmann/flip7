@@ -240,7 +240,8 @@ export default function Setup({ recent, onStart }: Props) {
               value: c,
               label: colorName(c),
               content: <><span className="choice-emoji" aria-hidden>{row.emoji}</span><span className="choice-name" aria-hidden>{colorName(c)}</span></>,
-              style: { background: c },
+              // Farbfeld bringt seinen eigenen hellen Hintergrund mit: dunkle Schrift in beiden Themes
+              style: { background: c, color: '#2b2350' },
             }))}
             onPick={(color) => { update(row.key, { color }); setChoosing(null) }}
             onClose={() => setChoosing(null)}
