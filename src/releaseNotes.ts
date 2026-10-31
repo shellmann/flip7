@@ -7,6 +7,7 @@ export type ReleaseNote = { version: string; highlights: string[] }
 
 // Neueste Version zuerst.
 export const RELEASE_NOTES: ReleaseNote[] = [
+  { version: '0.2.1', highlights: ['Der Rechenweg steht jetzt oben', '„Fertig“ geht erst, wenn etwas eingetragen ist', 'Tier und Farbe aus einer Auswahl wählen'] },
   { version: '0.2.0', highlights: ['Ergebnisse schon während der Runde eintragen – einfach auf den Spieler tippen', 'Rückgängig behält jetzt die Punkte der Runde'] },
   { version: '0.1.0', highlights: ['Erste Version'] },
 ]

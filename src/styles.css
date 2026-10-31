@@ -53,6 +53,10 @@ a { color: var(--primary); font-weight: 600; }
 .main { display: block; }
 .stack { display: grid; gap: 1rem; }
 .spacer-lg { height: 1.5rem; }
+/* Zusätzlicher Abstand zwischen zwei großen Knöpfen, damit ein Fehltipp nicht den anderen trifft */
+.btn-apart { margin-top: 1.25rem; }
+/* Hauptknopf auf dem Spielstand: Luft zu den Spielerzeilen darüber und zu „Letzte Runde zurück“ darunter */
+.btn-main { margin: 0.75rem 0 1.5rem; }
 .muted { color: var(--muted); font-size: 0.95rem; }
 .note { color: var(--muted); font-size: 0.98rem; }
 .note-bad { color: var(--danger); font-weight: 600; }
@@ -154,7 +158,7 @@ a { color: var(--primary); font-weight: 600; }
 /* Kartenwahl */
 .picker { max-width: 36rem; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; }
 .picker-head {
-  position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem;
+  position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; padding: 0.75rem 1rem;
   background: var(--player, var(--surface)); color: #2b2350; border-bottom: 3px solid rgba(43, 35, 80, 0.2);
 }
 .picker-head .avatar { background: #fff; }
@@ -163,11 +167,12 @@ a { color: var(--primary); font-weight: 600; }
 .picker-total { display: grid; text-align: right; line-height: 1; }
 .picker-total strong { font-size: 2.75rem; }
 .picker-total span { font-size: 0.85rem; }
-.picker-body { flex: 1; display: grid; align-content: start; gap: 1rem; padding: 1rem; }
+.picker-formula { flex: 1 0 100%; margin: 0; padding: 0.35rem 0.75rem; background: rgba(255, 255, 255, 0.7); border-radius: 0.75rem; font-size: 1.15rem; font-weight: 700; text-align: center; }
+.picker-body { flex: 1; display: grid; align-content: start; gap: 1rem; padding: 1rem 1rem 2.5rem; }
 .picker-sub { font-size: 1.15rem; }
 .picker-bar {
-  position: sticky; bottom: 0; z-index: 2; display: flex; gap: 0.75rem; padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
-  background: var(--bg); border-top: 3px solid var(--line);
+  position: sticky; bottom: 0; z-index: 2; display: flex; gap: 0.75rem; padding: 1.75rem 1rem calc(1.75rem + env(safe-area-inset-bottom)); /* unten Abstand zur Taskleiste bzw. Home-Leiste */
+  background: var(--bg); border-top: 3px solid var(--line); box-shadow: 0 -6px 12px rgba(43, 35, 80, 0.08);
 }
 .picker-bar .btn { min-height: 4rem; }
 .segmented { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 0.5rem; }
@@ -190,7 +195,6 @@ a { color: var(--primary); font-weight: 600; }
 .card.is-on { background: hsl(var(--hue, 260) 90% 72%); color: var(--card-ink); border-style: solid; transform: translateY(2px); box-shadow: 0 2px 0 rgba(43, 35, 80, 0.2); }
 .card-check { position: absolute; top: 0.25rem; right: 0.25rem; background: #fff; color: var(--good); border-radius: 50%; padding: 2px; }
 .card:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
-.formula { text-align: center; font-size: 1.25rem; font-weight: 700; background: var(--surface); border: 3px solid var(--line); border-radius: var(--radius); padding: 0.75rem; }
 
 .manual-value { text-align: center; font-size: 4rem; font-weight: 700; line-height: 1.1; background: var(--surface); border: 3px solid var(--line); border-radius: var(--radius); padding: 0.5rem; }
 .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
@@ -261,3 +265,19 @@ a { color: var(--primary); font-weight: 600; }
 .round-status { font-weight: 700; color: var(--muted); }
 .round-status.is-done { color: var(--good); }
 @media (prefers-reduced-motion: reduce) { .board-row-btn { transition: none; } }
+
+/* Auswahlfenster für Tier und Farbe */
+.choice-dialog { width: min(30rem, 100%); max-height: calc(100dvh - 2rem); overflow-y: auto; }
+.choice-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr)); gap: 0.75rem; }
+.choice {
+  position: relative; display: grid; place-items: center; align-content: center; gap: 0.15rem; min-height: 4.5rem; padding: 0.25rem;
+  background: var(--bg); color: var(--ink); border: 3px solid var(--line); border-radius: 1rem; box-shadow: var(--shadow);
+}
+.choice.is-on { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary); }
+/* Vergebenes Tier: nur das Tier blass, der Text „bei Anna“ bleibt gut lesbar */
+.choice:disabled { cursor: not-allowed; box-shadow: none; border-style: dashed; }
+.choice:disabled .choice-emoji { opacity: 0.35; filter: grayscale(1); }
+.choice-emoji { font-size: 2.2rem; line-height: 1; }
+.choice-name { font-size: 0.8rem; font-weight: 700; }
+.choice-check { position: absolute; top: 0.2rem; right: 0.2rem; background: #fff; color: var(--good); border-radius: 50%; padding: 2px; }
+.choice-taken { color: var(--muted); }

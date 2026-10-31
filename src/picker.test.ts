@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { emptyPicker, pickerFromEntry, pickerToEntry, pressKey, toggleIn } from './picker'
+import { emptyPicker, hasInput, pickerFromEntry, pickerToEntry, pressKey, toggleIn } from './picker'
 import { bustEntry, cardsEntry, manualEntry } from './scoring'
 
 describe('pickerToEntry / pickerFromEntry', () => {
@@ -43,4 +43,31 @@ describe('Tastatur', () => {
 it('toggleIn schaltet um', () => {
   expect(toggleIn([1, 2], 3)).toEqual([1, 2, 3])
   expect(toggleIn([1, 2, 3], 2)).toEqual([1, 3])
+})
+
+describe('hasInput', () => {
+  it('leerer Zustand hat keine Eingabe', () => {
+    expect(hasInput(emptyPicker())).toBe(false)
+    expect(hasInput({ ...emptyPicker(), mode: 'manual' })).toBe(false)
+  })
+  it('Karten, Bonuskarten, ×2 und die Karte 0 zählen als Eingabe', () => {
+    expect(hasInput({ ...emptyPicker(), numbers: [0] })).toBe(true)
+    expect(hasInput({ ...emptyPicker(), modifiers: [4] })).toBe(true)
+    expect(hasInput({ ...emptyPicker(), x2: true })).toBe(true)
+  })
+  it('manuell zählt jede eingetippte Zahl, auch 0', () => {
+    expect(hasInput({ ...emptyPicker(), mode: 'manual', manualText: '0' })).toBe(true)
+  })
+  it('Verzockt zählt immer als Eingabe', () => {
+    expect(hasInput({ ...emptyPicker(), bust: true })).toBe(true)
+    expect(hasInput({ ...emptyPicker(), mode: 'manual', bust: true })).toBe(true)
+  })
+  it('es zählt nur die aktive Eingabeart', () => {
+    expect(hasInput({ ...emptyPicker(), mode: 'manual', numbers: [5] })).toBe(false)
+    expect(hasInput({ ...emptyPicker(), manualText: '12' })).toBe(false)
+  })
+  it('ein vorhandener Eintrag zum Korrigieren ist schon eine Eingabe', () => {
+    expect(hasInput(pickerFromEntry(cardsEntry({ numbers: [3], modifiers: [], x2: false })))).toBe(true)
+    expect(hasInput(pickerFromEntry(manualEntry(0, false)))).toBe(true)
+  })
 })

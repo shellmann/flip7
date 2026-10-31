@@ -46,3 +46,11 @@ export function pressKey(text: string, key: string): string {
   if (next.length > 3) return text
   return Number.parseInt(next, 10) > 171 ? '171' : next
 }
+
+// Erst wenn etwas eingegeben ist, darf "Fertig"/"Weiter" speichern — verhindert versehentliche 0-Punkte-Einträge.
+// Die Karte 0 zählt als Eingabe, ebenso eine eingetippte 0 und "Verzockt".
+export function hasInput(s: PickerState): boolean {
+  if (s.bust) return true
+  if (s.mode === 'manual') return s.manualText !== ''
+  return s.numbers.length > 0 || s.modifiers.length > 0 || s.x2
+}

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowDown, ArrowUp, Palette, Plus, Shuffle, Trash2 } from 'lucide-react'
-import { COLORS, EMOJIS, nextUnused } from './avatars'
+import ChoiceDialog from './ChoiceDialog'
+import Confirm from './Confirm'
+import { COLORS, EMOJIS, colorName, emojiName, nextUnused } from './avatars'
 import { DEFAULT_TARGET, MAX_PLAYERS, MIN_PLAYERS, TARGETS } from './game'
 import { beginBusy, endBusy } from './update'
 import type { RecentPlayer } from './types'
@@ -27,6 +29,8 @@ export default function Setup({ recent, onStart }: Props) {
   const [target, setTarget] = useState<number>(DEFAULT_TARGET)
   const [customTarget, setCustomTarget] = useState('')
   const [dealer, setDealer] = useState(0)
+  const [choosing, setChoosing] = useState<{ key: string; kind: 'emoji' | 'color' } | null>(null)
+  const [removing, setRemoving] = useState<number | null>(null) // Rückfrage, bevor ein Spieler mit Namen verschwindet
 
   const edited = rows.some((r) => r.name.trim() !== '')
   useEffect(() => {
@@ -88,8 +92,9 @@ export default function Setup({ recent, onStart }: Props) {
                 <button
                   type="button"
                   className="avatar avatar-btn"
-                  aria-label={`Tier ändern (${r.emoji})`}
-                  onClick={() => update(r.key, { emoji: nextUnused(EMOJIS, r.emoji, rows.map((x) => x.emoji)) })}
+                  aria-label={`Tier ändern, jetzt: ${emojiName(r.emoji)}`}
+                  aria-haspopup="dialog"
+                  onClick={() => setChoosing({ key: r.key, kind: 'emoji' })}
                 >
                   {r.emoji}
                 </button>
@@ -106,7 +111,13 @@ export default function Setup({ recent, onStart }: Props) {
                 />
               </div>
               <div className="player-row-actions">
-                <button type="button" className="mini" onClick={() => update(r.key, { color: nextUnused(COLORS, r.color, rows.map((x) => x.color)) })}>
+                <button
+                  type="button"
+                  className="mini"
+                  aria-label={`Farbe ändern, jetzt: ${colorName(r.color)}`}
+                  aria-haspopup="dialog"
+                  onClick={() => setChoosing({ key: r.key, kind: 'color' })}
+                >
                   <Palette size={22} aria-hidden /><span>Farbe</span>
                 </button>
                 <button type="button" className="mini" disabled={i === 0} onClick={() => move(i, -1)}>
@@ -115,7 +126,7 @@ export default function Setup({ recent, onStart }: Props) {
                 <button type="button" className="mini" disabled={i === rows.length - 1} onClick={() => move(i, 1)}>
                   <ArrowDown size={22} aria-hidden /><span>Runter</span>
                 </button>
-                <button type="button" className="mini mini-danger" disabled={rows.length <= MIN_PLAYERS} onClick={() => remove(i)}>
+                <button type="button" className="mini mini-danger" aria-label={`${r.name.trim() || `Spieler ${i + 1}`} entfernen`} onClick={() => (r.name.trim() ? setRemoving(i) : remove(i))}>
                   <Trash2 size={22} aria-hidden /><span>Weg</span>
                 </button>
               </div>
@@ -168,6 +179,7 @@ export default function Setup({ recent, onStart }: Props) {
 
       <section className="panel">
         <h3>Wer gibt zuerst?</h3>
+        {rows.length === 0 && <p className="note">Füge zuerst Spieler hinzu.</p>}
         <div className="chips">
           {rows.map((r, i) => (
             <button key={r.key} type="button" className={`chip chip-big ${dealer === i ? 'is-on' : ''}`} style={{ ['--player' as string]: r.color }} aria-pressed={dealer === i} onClick={() => setDealer(i)}>
@@ -175,7 +187,7 @@ export default function Setup({ recent, onStart }: Props) {
             </button>
           ))}
         </div>
-        <button type="button" className="btn btn-secondary btn-wide" onClick={() => setDealer(Math.floor(Math.random() * rows.length))}>
+        <button type="button" className="btn btn-secondary btn-wide" disabled={rows.length === 0} onClick={() => setDealer(Math.floor(Math.random() * rows.length))}>
           <Shuffle size={22} aria-hidden /> Zufällig auswählen
         </button>
       </section>
@@ -189,6 +201,53 @@ export default function Setup({ recent, onStart }: Props) {
       >
         Spiel starten 🎉
       </button>
+      {removing !== null && rows[removing] && (
+        <Confirm
+          title={`${rows[removing].name.trim()} entfernen?`}
+          text="Der Name verschwindet aus dieser Liste. Du kannst ihn danach wieder eintragen."
+          confirmLabel="Ja, entfernen"
+          danger
+          onConfirm={() => { remove(removing); setRemoving(null) }}
+          onCancel={() => setRemoving(null)}
+        />
+      )}
+      {choosing && (() => {
+        const row = rows.find((r) => r.key === choosing.key)
+        if (!row) return null
+        const others = rows.filter((r) => r.key !== row.key)
+        const who = (r: Row) => r.name.trim() || `Spieler ${rows.indexOf(r) + 1}`
+        return choosing.kind === 'emoji' ? (
+          <ChoiceDialog
+            title={`Tier für ${who(row)}`}
+            selected={row.emoji}
+            choices={EMOJIS.map((e) => {
+              const owner = others.find((o) => o.emoji === e)
+              return {
+                value: e,
+                label: emojiName(e),
+                content: <><span className="choice-emoji" aria-hidden>{e}</span>{!owner && <span className="choice-name" aria-hidden>{emojiName(e)}</span>}</>,
+                taken: owner ? `bei ${who(owner)}` : undefined,
+              }
+            })}
+            onPick={(emoji) => { update(row.key, { emoji }); setChoosing(null) }}
+            onClose={() => setChoosing(null)}
+          />
+        ) : (
+          <ChoiceDialog
+            title={`Farbe für ${who(row)}`}
+            selected={row.color}
+            choices={COLORS.map((c) => ({
+              value: c,
+              label: colorName(c),
+              content: <><span className="choice-emoji" aria-hidden>{row.emoji}</span><span className="choice-name" aria-hidden>{colorName(c)}</span></>,
+              // Farbfeld bringt seinen eigenen hellen Hintergrund mit: dunkle Schrift in beiden Themes
+              style: { background: c, color: '#2b2350' },
+            }))}
+            onPick={(color) => { update(row.key, { color }); setChoosing(null) }}
+            onClose={() => setChoosing(null)}
+          />
+        )
+      })()}
     </div>
   )
 }
