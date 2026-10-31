@@ -67,7 +67,7 @@ export default function Scoreboard({ game, finished, onEnterRound, onPlayerOut, 
                 </div>
                 <span className="muted">{left > 0 ? `Noch ${left} bis zum Ziel` : `Ziel erreicht! Platz ${rankOf.get(p.id)}`}</span>
                 {open && (
-                  <span className={`round-status ${draftEntry ? 'is-done' : ''}`}>{draftEntry ? roundStatus(draftEntry) : '⏳ spielt noch'}</span>
+                  <span className={`round-status ${draftEntry ? (draftEntry.bust ? 'is-bust' : 'is-done') : ''}`}>{draftEntry ? roundStatus(draftEntry) : '⏳ spielt noch'}</span>
                 )}
               </div>
               <strong className="board-total">{total}</strong>
