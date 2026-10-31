@@ -264,6 +264,7 @@ a { color: var(--primary); font-weight: 600; }
 .board-row-btn.is-leading { box-shadow: 0 0 0 4px var(--accent), var(--shadow); }
 .round-status { font-weight: 700; color: var(--muted); }
 .round-status.is-done { color: var(--good); }
+.round-status.is-bust { color: var(--danger); } /* verzockt ist eingetragen, aber kein Erfolg: nicht grün */
 @media (prefers-reduced-motion: reduce) { .board-row-btn { transition: none; } }
 
 /* Auswahlfenster für Tier und Farbe */
