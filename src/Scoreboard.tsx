@@ -96,9 +96,9 @@ export default function Scoreboard({ game, finished, onEnterRound, onPlayerOut, 
       </ul>
 
       {finished ? (
-        <button type="button" className="btn btn-primary btn-wide btn-xl" onClick={onShowResult}>🏆 Zum Spielende</button>
+        <button type="button" className="btn btn-primary btn-wide btn-xl btn-main" onClick={onShowResult}>🏆 Zum Spielende</button>
       ) : (
-        <button type="button" className="btn btn-primary btn-wide btn-xl" onClick={onEnterRound}>
+        <button type="button" className="btn btn-primary btn-wide btn-xl btn-main" onClick={onEnterRound}>
           {mainLabel}
         </button>
       )}

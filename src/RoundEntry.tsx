@@ -181,7 +181,7 @@ export default function RoundEntry({ game, entry, onSaveDraft, onRemoveDraft, on
         <button type="button" className="btn btn-primary btn-wide btn-xl" disabled={!complete} onClick={onSaveRound}>
           Runde speichern ✓
         </button>
-        <button type="button" className="btn btn-secondary btn-wide" onClick={onClose}>Später weiter</button>
+        <button type="button" className="btn btn-secondary btn-wide btn-apart" onClick={onClose}>Später weiter</button>
         <div className="spacer-lg" />
         {entered > 0 && (
           <button type="button" className="btn btn-danger btn-wide" onClick={() => setConfirmDiscard(true)}>Runde verwerfen</button>

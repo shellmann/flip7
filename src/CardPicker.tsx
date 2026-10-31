@@ -3,7 +3,7 @@ import { Check, Hash, Layers, Star } from 'lucide-react'
 import Celebrate from './Celebrate'
 import Keypad from './Keypad'
 import { NUMBER_CARDS, PLUS_CARDS, FLIP7_COUNT, describe, scoreCards } from './scoring'
-import { pickerToEntry, pressKey, toggleIn, type PickerState } from './picker'
+import { hasInput, pickerToEntry, pressKey, toggleIn, type PickerState } from './picker'
 import type { Player } from './types'
 
 type Props = {
@@ -36,6 +36,13 @@ export default function CardPicker({ player, state, onChange, step, backLabel, n
 
   const full = state.numbers.length >= FLIP7_COUNT
   const cardsLocked = state.bust
+  const ready = hasInput(state)
+  // Rechenweg oben im Kopf, damit er auch auf kleinen Bildschirmen ohne Scrollen sichtbar ist.
+  const formula = state.bust
+    ? '💥 Verzockt – 0 Punkte'
+    : state.mode === 'cards'
+      ? ready ? describe(scoreCards({ numbers: state.numbers, modifiers: state.modifiers, x2: state.x2 })) : 'Noch keine Karte gewählt'
+      : state.manualText ? `${state.manualText} eingetippt${state.manualFlip7 ? ' (Flip 7)' : ''}` : 'Noch keine Zahl eingetippt'
 
   return (
     <div className="picker">
@@ -51,6 +58,7 @@ export default function CardPicker({ player, state, onChange, step, backLabel, n
           <strong>{entry.points}</strong>
           <span>Punkte</span>
         </div>
+        <p className="picker-formula">{formula}</p>
       </header>
 
       <div className="picker-body">
@@ -138,7 +146,6 @@ export default function CardPicker({ player, state, onChange, step, backLabel, n
               </button>
             </div>
 
-            {!state.bust && <p className="formula">{describe(scoreCards({ numbers: state.numbers, modifiers: state.modifiers, x2: state.x2 }))}</p>}
           </>
         ) : (
           <>
@@ -161,7 +168,9 @@ export default function CardPicker({ player, state, onChange, step, backLabel, n
 
       <footer className="picker-bar">
         <button type="button" className="btn btn-secondary" onClick={onBack}>{backLabel}</button>
-        <button type="button" className="btn btn-primary btn-grow" onClick={onNext}>{nextLabel}</button>
+        <button type="button" className="btn btn-primary btn-grow" disabled={!ready} onClick={onNext}>
+          {ready ? nextLabel : 'Erst Karten oder Zahl wählen'}
+        </button>
       </footer>
     </div>
   )
